@@ -1,0 +1,167 @@
+/* General Styles */
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --primary-color: #4a90e2;
+  --secondary-color: #f5a623;
+  --bg-color: #f4f7f6;
+  --card-bg: #ffffff;
+  --text-color: #333;
+  --border-radius: 8px;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+.App {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* Header & Nav */
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: var(--card-bg);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+header h1 {
+  color: var(--primary-color);
+  margin: 0;
+}
+
+nav button {
+  margin-left: 1rem;
+}
+
+/* Main Layouts */
+.order-view {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .order-view {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Item Cards (Menu & Orders) */
+.item-list, .order-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.5rem;
+}
+
+.item-card {
+  background-color: var(--card-bg);
+  border: 1px solid #eee;
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.item-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.item-card h3 {
+  margin-top: 0;
+  color: var(--primary-color);
+}
+
+.item-card p {
+  margin: 0.25rem 0;
+}
+.item-card em {
+  color: #777;
+  font-size: 0.9rem;
+}
+
+/* Cart Section */
+.cart-section {
+  background-color: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  align-self: flex-start; /* Sticks to top */
+}
+
+.cart-section h2 {
+  margin-top: 0;
+}
+
+.cart-section ul {
+  padding-left: 1.5rem;
+}
+
+.cart-section h3 {
+  color: var(--primary-color);
+}
+
+/* Kitchen View */
+.order-card h4 {
+  color: var(--secondary-color);
+}
+.order-card p {
+  font-weight: bold;
+}
+.order-card small {
+  font-weight: normal;
+  color: #555;
+}
+
+
+/* Buttons */
+button {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--border-radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+button:hover {
+  background-color: #3a7ac8;
+}
+
+button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.item-card button {
+  width: 100%;
+  margin-top: 1rem;
+  background-color: var(--secondary-color);
+}
+
+.item-card button:hover {
+  background-color: #e09415;
+}
+
+/* Message Bar */
+.message {
+  padding: 1rem;
+  background-color: #e0f7fa;
+  border: 1px solid #b2ebf2;
+  color: #006064;
+  border-radius: var(--border-radius);
+  text-align: center;
+  font-weight: 500;
+}
