@@ -1,203 +1,265 @@
-import { useState, useEffect } from 'react';
-import './App.css'; // We will create this file next
+import { useState, useEffect } from 'react'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
+import bgImg from './img1.jpg' // <-- image placed directly in src folder
+import './App.css'
 
 function App() {
-  const [menu, setMenu] = useState([]);
+  const [menuItems, setMenuItems] = useState([]);
   const [cart, setCart] = useState([]);
-  const [view, setView] = useState('menu'); // 'menu' or 'kitchen'
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState('');
+  const [error, setError] = useState(null);
+  const [loadingMenu, setLoadingMenu] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+  const [orderStatus, setOrderStatus] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
 
-  // Fetch menu on initial component load
+  // --- Login Logic ---
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (username === 'user' && password === '1234') {
+      setIsLoggedIn(true);
+      setLoginError('');
+    } else {
+      setLoginError('Invalid username or password.');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setUsername('');
+    setPassword('');
+    setCart([]);
+    setOrders([]);
+  };
+
+  // --- Manage background class & inline style is optional fallback ---
   useEffect(() => {
-    fetchMenu();
-  }, []);
+    // Nothing needed for body classes when using inline background + has-bg class.
+    return () => {}; // no cleanup required here
+  }, [isLoggedIn]);
 
-  // Fetch menu from our backend API
-  const fetchMenu = async () => {
-    try {
-      setLoading(true);
-      // We can use a relative path because of the proxy we set in vite.config.js
-      const response = await fetch('/api/menu');
-      const data = await response.json();
-      setMenu(data);
-    } catch (error) {
-      console.error('Failed to fetch menu:', error);
-      setMessage('Error: Could not load menu.');
-    } finally {
-      setLoading(false);
-    }
+  // --- Data Fetching ---
+  useEffect(() => {
+    if (!isLoggedIn) return; // Fetch only when logged in
+    setLoadingMenu(true);
+    fetch('http://localhost:5000/api/menu')
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok for menu');
+        return response.json();
+      })
+      .then(data => {
+        setMenuItems(data);
+        setError(null);
+      })
+      .catch(fetchError => {
+        console.error("Menu fetch error:", fetchError);
+        setError("Could not load menu");
+      })
+      .finally(() => setLoadingMenu(false));
+  }, [isLoggedIn]);
+
+  const fetchOrders = () => {
+    if (!isLoggedIn) return;
+    setLoadingOrders(true);
+    fetch('http://localhost:5000/api/orders')
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok for orders');
+        return response.json();
+      })
+      .then(data => {
+        setOrders(data);
+        setError(null);
+      })
+      .catch(fetchError => {
+        console.error("Orders fetch error:", fetchError);
+        setError("Could not load orders");
+      })
+      .finally(() => setLoadingOrders(false));
   };
 
-  // Fetch all orders (for kitchen view)
-  const fetchOrders = async () => {
-    try {
-      const response = await fetch('/api/orders');
-      const data = await response.json();
-      setOrders(data);
-    } catch (error) {
-      console.error('Failed to fetch orders:', error);
-    }
-  };
+  useEffect(() => {
+    if (isLoggedIn) fetchOrders();
+  }, [isLoggedIn]);
 
-  // Add an item from the menu to the cart
-  const addToCart = (item) => {
-    setCart((prevCart) => {
-      // Check if item is already in cart
-      const existingItem = prevCart.find((cartItem) => cartItem.id === item.id);
+  // --- Cart and Order Logic ---
+  const addToCart = (itemToAdd) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(cartItem => cartItem._id === itemToAdd._id);
       if (existingItem) {
-        // If yes, increase quantity
-        return prevCart.map((cartItem) =>
-          cartItem.id === item.id
+        return prevCart.map(cartItem =>
+          cartItem._id === itemToAdd._id
             ? { ...cartItem, quantity: cartItem.quantity + 1 }
             : cartItem
         );
       } else {
-        // If no, add to cart with quantity 1
-        return [...prevCart, { ...item, quantity: 1 }];
+        return [...prevCart, { ...itemToAdd, quantity: 1 }];
       }
+    });
+    setOrderStatus('');
+  };
+
+  const cartTotal = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+
+  const placeOrder = () => {
+    if (cart.length === 0) return;
+    setOrderStatus('Placing order...');
+
+    const orderData = {
+      items: cart.map(item => ({
+        menuItemId: item._id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity
+      })),
+      totalAmount: cartTotal
+    };
+
+    fetch('http://localhost:5000/api/orders', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData),
+    })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(errData => {
+           throw new Error(errData.message || 'Failed to place order');
+        }).catch(() => {
+             throw new Error(`HTTP error! status: ${response.status}`);
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      setOrderStatus(`Order placed successfully! Order ID: ${data.orderId ? data.orderId.slice(-6) : '—'}`);
+      setCart([]);
+      fetchOrders();
+    })
+    .catch(err => {
+      console.error('Order error:', err);
+      setOrderStatus(`Error placing order: ${err.message}`);
     });
   };
 
-  // Calculate total price of the cart
-  const cartTotal = cart.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
-  );
+  // Inline background style when logged in (image from src/)
+  const appBgStyle = isLoggedIn ? {
+    backgroundImage: `url(${bgImg})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundAttachment: 'fixed', // remove for better mobile perf if needed
+  } : undefined;
 
-  // Submit the order to the backend
-  const placeOrder = async () => {
-    if (cart.length === 0) return;
-
-    try {
-      const response = await fetch('/api/order', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          items: cart,
-          total: cartTotal,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage(`Order #${data.order.id} placed successfully!`);
-        setCart([]); // Clear the cart
-      } else {
-        setMessage(`Error: ${data.message}`);
-      }
-    } catch (error) {
-      console.error('Failed to place order:', error);
-      setMessage('Error: Could not connect to server.');
-    }
-  };
-
-  // Simple component to render the menu
-  const MenuDisplay = () => (
-    <div>
-      <h2>Menu</h2>
-      {loading && <p>Loading menu...</p>}
-      <div className="item-list">
-        {menu.map((item) => (
-          <div key={item.id} className="item-card">
-            <h3>{item.name}</h3>
-            <p>(${item.price.toFixed(2)})</p>
-            <p><em>{item.category}</em></p>
-            <button onClick={() => addToCart(item)}>Add to Cart</button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  // Simple component to render the cart
-  const CartDisplay = () => (
-    <div className="cart-section">
-      <h2>Your Order</h2>
-      {cart.length === 0 ? (
-        <p>Your cart is empty.</p>
-      ) : (
-        <>
-          <ul>
-            {cart.map((item) => (
-              <li key={item.id}>
-                {item.name} (x{item.quantity}) - $
-                {(item.price * item.quantity).toFixed(2)}
-              </li>
-            ))}
-          </ul>
-          <h3>Total: ${cartTotal.toFixed(2)}</h3>
-          <button onClick={placeOrder} disabled={cart.length === 0}>
-            Place Order
-          </button>
-        </>
-      )}
-    </div>
-  );
-
-  // Simple component to show the kitchen staff the orders
-  const KitchenDisplay = () => {
-    // Fetch orders when switching to this view
-    useEffect(() => {
-      fetchOrders();
-
-      // Optional: auto-refresh orders every 10 seconds
-      const interval = setInterval(fetchOrders, 10000);
-      return () => clearInterval(interval); // Cleanup interval on unmount
-    }, []);
-
+  // --- Login Page ---
+  if (!isLoggedIn) {
     return (
-      <div className="kitchen-view">
-        <h2>Kitchen Orders</h2>
-        <button onClick={fetchOrders}>Refresh Orders</button>
-        <div className="order-list">
-          {orders.length === 0 && <p>No orders yet.</p>}
-          {orders.map((order) => (
-            <div key={order.id} className="item-card order-card">
-              <h3>Order #{order.id}</h3>
-              <p>Status: {order.status}</p>
+      <div className="login-page">
+        <h1>Smart Canteen Login</h1>
+        <form onSubmit={handleLogin} className="login-form">
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button type="submit">Login</button>
+        </form>
+        {loginError && <p className="message error">{loginError}</p>}
+        <p className="hint">Hint: Username = user | Password = 1234</p>
+      </div>
+    );
+  }
+
+  // --- Main App (after login) ---
+  return (
+    <div
+      className={`App ${isLoggedIn ? 'has-bg' : ''}`}
+      style={appBgStyle}
+    >
+      <header>
+        <h1>Smart Canteen</h1>
+        <button onClick={handleLogout} className="logout-btn">Logout</button>
+      </header>
+
+      {error && <p className="message error">{error}</p>}
+
+      <div className="order-view">
+        <section className="menu-section">
+          <h2>Menu</h2>
+          {loadingMenu && <p>Loading menu...</p>}
+          {!loadingMenu && menuItems.length === 0 && !error && <p>No menu items available.</p>}
+          <div className="item-list">
+            {menuItems.map(item => (
+              <div key={item._id} className="item-card">
+                <h3>{item.name}</h3>
+                <p className="price">₹{item.price.toFixed(2)}</p>
+                {item.description && <p><em>{item.description}</em></p>}
+                <p><small>Category: {item.category}</small></p>
+                <button onClick={() => addToCart(item)}>Add to Cart</button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <aside className="cart-section">
+          <h2>Your Order</h2>
+          {cart.length === 0 ? (
+            <p>Your cart is empty.</p>
+          ) : (
+            <>
               <ul>
-                {order.items.map((item) => (
-                  <li key={item.id}>{item.name} (x{item.quantity})</li>
+                {cart.map(item => (
+                  <li key={item._id}>
+                    <span>{item.name} x {item.quantity}</span>
+                    <span>₹{(item.price * item.quantity).toFixed(2)}</span>
+                  </li>
                 ))}
               </ul>
-              <h4>Total: ${order.total.toFixed(2)}</h4>
-              <p><small>{new Date(order.timestamp).toLocaleTimeString()}</small></p>
+              <h3>Total: ₹{cartTotal.toFixed(2)}</h3>
+              <button
+                onClick={placeOrder}
+                disabled={cart.length === 0 || orderStatus === 'Placing order...'}
+              >
+                Place Order
+              </button>
+            </>
+          )}
+          {orderStatus && <p className="message">{orderStatus}</p>}
+        </aside>
+      </div>
+
+      <section className="orders-history-section">
+        <h2>Order History</h2>
+        {loadingOrders && <p>Loading orders...</p>}
+        {!loadingOrders && orders.length === 0 && !error && <p>No previous orders found.</p>}
+        <div className="order-list">
+          {orders.map(order => (
+            <div key={order._id} className="item-card order-card">
+              <h4>Order ID: ...{order._id.slice(-6)}</h4>
+              <p className="price">Total: ₹{order.totalAmount.toFixed(2)}</p>
+              <p>Status: {order.status || 'Pending'}</p>
+              <small>Placed: {new Date(order.createdAt).toLocaleString()}</small>
+              <ul>
+                {order.items.map((item, index) => (
+                  <li key={index}><small>{item.name} x {item.quantity}</small></li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="App">
-      <header>
-        <h1>Smart Canteen</h1>
-        <nav>
-          <button onClick={() => setView('menu')}>Order Menu</button>
-          <button onClick={() => setView('kitchen')}>Kitchen View</button>
-        </nav>
-      </header>
-
-      {message && <p className="message">{message}</p>}
-
-      {view === 'menu' ? (
-        <main className="order-view">
-          <MenuDisplay />
-          <CartDisplay />
-        </main>
-      ) : (
-        <main>
-          <KitchenDisplay />
-        </main>
-      )}
+      </section>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
