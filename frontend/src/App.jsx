@@ -46,7 +46,7 @@ function App() {
   useEffect(() => {
     if (!isLoggedIn) return; // Fetch only when logged in
     setLoadingMenu(true);
-    fetch('http://localhost:5000/api/menu')
+    fetch('https://smart-canteen-backend-c9ge.onrender.com/api/menu')
       .then(response => {
         if (!response.ok) throw new Error('Network response was not ok for menu');
         return response.json();
@@ -65,7 +65,7 @@ function App() {
   const fetchOrders = () => {
     if (!isLoggedIn) return;
     setLoadingOrders(true);
-    fetch('http://localhost:5000/api/orders')
+    fetch('https://smart-canteen-backend-c9ge.onrender.com/api/orders')
       .then(response => {
         if (!response.ok) throw new Error('Network response was not ok for orders');
         return response.json();
@@ -118,7 +118,7 @@ function App() {
       totalAmount: cartTotal
     };
 
-    fetch('http://localhost:5000/api/orders', {
+    fetch('https://smart-canteen-backend-c9ge.onrender.com/api/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderData),
