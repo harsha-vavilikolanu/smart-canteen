@@ -328,7 +328,11 @@ button:disabled {
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   font-size: 1rem;
-  background-color: #fff;
+  
+  /* Use theme variables to support dark mode */
+  background-color: var(--color-surface, #fff); 
+  color: var(--color-text, #222);
+
   transition: all 0.2s ease;
   box-shadow: var(--shadow-sm);
 }
