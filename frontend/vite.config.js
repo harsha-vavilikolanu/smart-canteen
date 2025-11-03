@@ -9,7 +9,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://smart-canteen-backend-c9ge.onrender.com',
+        target: 'https://smart-canteen-backend1.onrender.com',
         changeOrigin: true,
         secure: false,      
       },
